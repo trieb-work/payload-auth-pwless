@@ -4,7 +4,7 @@ import type { ResolvedAuthPluginOptions } from '../types'
 
 import { getClientIp } from '../utilities/getClientIp'
 import { asLoosePayload } from '../utilities/loosePayload'
-import { getLoginPath, getRequestOrigin, isSafeRedirectPath } from '../utilities/requestOrigin'
+import { getOnboardingPath, getRequestOrigin, isSafeRedirectPath } from '../utilities/requestOrigin'
 import { buildAuthCookieHeader, createSession } from '../utilities/session'
 import { signOAuthState, verifyOAuthState } from '../utilities/tokens'
 
@@ -142,8 +142,10 @@ export function createOAuthEndpoints(options: ResolvedAuthPluginOptions): Endpoi
         const origin = getRequestOrigin(req, options.serverURL)
         const url = new URL(req.url || '', origin)
         const appContext = url.searchParams.get('context') || options.defaultContext || ''
-        const requestedReturnUrl = url.searchParams.get('returnUrl') || '/'
-        const returnUrl = isSafeRedirectPath(requestedReturnUrl) ? requestedReturnUrl : '/'
+        // Default post-login target: the Payload admin route
+        const requestedReturnUrl = url.searchParams.get('returnUrl') || options.adminRoute
+        const returnUrl =
+          isSafeRedirectPath(requestedReturnUrl) ? requestedReturnUrl : options.adminRoute
 
         const state = await signOAuthState({ appContext, provider, returnUrl })
 
@@ -199,7 +201,8 @@ export function createOAuthEndpoints(options: ResolvedAuthPluginOptions): Endpoi
             contextNames.includes(parsed.appContext ?? '') ?
               parsed.appContext
             : options.defaultContext
-          const returnUrl = isSafeRedirectPath(parsed.returnUrl) ? parsed.returnUrl : '/'
+          const returnUrl =
+            isSafeRedirectPath(parsed.returnUrl) ? parsed.returnUrl : options.adminRoute
           stateData = { ...parsed, appContext: ctx, returnUrl }
         } catch {
           return Response.redirect(`${origin}/login?error=invalid_state`)
@@ -323,14 +326,21 @@ export function createOAuthEndpoints(options: ResolvedAuthPluginOptions): Endpoi
             },
           })
 
-          // Redirect with cookies
+          // Redirect with cookies.
+          // Users with incomplete profiles are only redirected to an
+          // onboarding UI when the app configured one (`onboarding.path`);
+          // otherwise `returnUrl` is honored (default: the admin route).
           const needsOnboarding =
             options.enableOnboarding &&
             (!user.firstName || !user.lastName || !user.onboardingComplete)
-          const redirectUrl =
+          const onboardingPath =
             needsOnboarding ?
-              `${getLoginPath(options, stateData.appContext, req.headers?.get?.('host'))}?step=onboarding`
-            : stateData.returnUrl || '/'
+              getOnboardingPath(options, stateData.appContext, req.headers?.get?.('host'))
+            : undefined
+          const redirectUrl =
+            onboardingPath ?
+              `${onboardingPath}?step=onboarding`
+            : stateData.returnUrl || options.adminRoute
           const headers = new Headers()
           headers.set('Location', `${origin}${redirectUrl}`)
           headers.append(

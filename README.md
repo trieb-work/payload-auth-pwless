@@ -81,29 +81,30 @@ extends it.
 All options are optional; sensible generic defaults are shipped. Full type:
 `PayloadAuthPluginConfig` (exported from the package).
 
-| Option                                               | Default                                                        | Description                                                                                     |
-| ---------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `serverURL`                                          | `NEXT_PUBLIC_SERVER_URL` env var, then `http://localhost:3000` | Base URL used for OAuth callbacks and magic-link URLs.                                          |
-| `rpName`                                             | `'Payload'`                                                    | WebAuthn Relying Party name shown to users during passkey registration.                         |
-| `rpID`                                               | hostname of `serverURL`                                        | WebAuthn Relying Party ID.                                                                      |
-| `allowedOrigins`                                     | `[serverURL]`                                                  | Origins allowed to perform WebAuthn ceremonies (needed for multi-host/subdomain setups).        |
-| `usersCollectionSlug`                                | `'users'`                                                      | Slug of the existing collection the plugin extends.                                             |
-| `sessionsCollectionSlug`                             | `'sessions'`                                                   | Slug of the sessions collection the plugin creates.                                             |
-| `webauthnCollectionSlug`                             | `'webauthn-credentials'`                                       | Slug of the WebAuthn credentials collection the plugin creates.                                 |
-| `enableWebAuthn` / `enableMagicLink` / `enableOAuth` | `true`                                                         | Toggle each auth method independently.                                                          |
-| `enableOnboarding`                                   | `true`                                                         | Registers `/api/auth/onboarding` plus `firstName`/`lastName`/`onboardingComplete` fields.       |
-| `enableAgentLogin`                                   | `false`                                                        | Registers the dev-only auto-login endpoint. See [Agent login](#agent-login-dev-only).           |
-| `contexts`                                           | `{}`                                                           | Optional map of named application contexts — see [Application contexts](#application-contexts). |
-| `defaultContext`                                     | first key of `contexts`                                        | Context assigned to auto-created users when none is requested.                                  |
-| `magicLink`                                          | —                                                              | `allowUser` guard, `autoCreateUsers` toggle, `getLoginPath` override. See `MagicLinkConfig`.    |
-| `email`                                              | —                                                              | Global magic-link email config (`from`, `subject`, `buildEmailHTML`). Overridable per context.  |
-| `oauth.providers.{google,facebook}`                  | env vars                                                       | `{ clientId, clientSecret }`, see [OAuth setup](#oauth-setup).                                  |
-| `webauthn.canManageUser`                             | denies all                                                     | Lets privileged users view/delete another user's passkeys.                                      |
-| `tokens.accessTokenLifetime`                         | `900` (15 min)                                                 | Access token (JWT) lifetime in seconds.                                                         |
-| `tokens.defaultSessionLifetime`                      | `604800` (7 days)                                              | Refresh-token/session lifetime in seconds when no per-context value applies.                    |
-| `tokens.magicLinkValidity`                           | `900` (15 min)                                                 | Magic-link token validity in seconds.                                                           |
-| `sessionCleanup`                                     | daily at 2 AM                                                  | Cron schedule for the expired-session cleanup job (`enabled`, `cron`, `queue`).                 |
-| `agentLogin`                                         | —                                                              | `email`, `secret`, `allowedHostnames` for the dev-only auto-login endpoint.                     |
+| Option                                               | Default                                                        | Description                                                                                                                                                                                                                                              |
+| ---------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `serverURL`                                          | `NEXT_PUBLIC_SERVER_URL` env var, then `http://localhost:3000` | Base URL used for OAuth callbacks and magic-link URLs.                                                                                                                                                                                                   |
+| `rpName`                                             | `'Payload'`                                                    | WebAuthn Relying Party name shown to users during passkey registration.                                                                                                                                                                                  |
+| `rpID`                                               | hostname of `serverURL`                                        | WebAuthn Relying Party ID.                                                                                                                                                                                                                               |
+| `allowedOrigins`                                     | `[serverURL]`                                                  | Origins allowed to perform WebAuthn ceremonies (needed for multi-host/subdomain setups).                                                                                                                                                                 |
+| `usersCollectionSlug`                                | `'users'`                                                      | Slug of the existing collection the plugin extends.                                                                                                                                                                                                      |
+| `sessionsCollectionSlug`                             | `'sessions'`                                                   | Slug of the sessions collection the plugin creates.                                                                                                                                                                                                      |
+| `webauthnCollectionSlug`                             | `'webauthn-credentials'`                                       | Slug of the WebAuthn credentials collection the plugin creates.                                                                                                                                                                                          |
+| `enableWebAuthn` / `enableMagicLink` / `enableOAuth` | `true`                                                         | Toggle each auth method independently.                                                                                                                                                                                                                   |
+| `enableOnboarding`                                   | `true`                                                         | Registers `/api/auth/onboarding` plus `firstName`/`lastName`/`onboardingComplete` fields.                                                                                                                                                                |
+| `onboarding.path`                                    | —                                                              | Frontend onboarding UI path (static or `({ context, host }) => string`). When set, users with incomplete profiles are redirected to `<path>?step=onboarding` after OAuth login; when omitted, `returnUrl` is honored (default: the Payload admin route). |
+| `enableAgentLogin`                                   | `false`                                                        | Registers the dev-only auto-login endpoint. See [Agent login](#agent-login-dev-only).                                                                                                                                                                    |
+| `contexts`                                           | `{}`                                                           | Optional map of named application contexts — see [Application contexts](#application-contexts).                                                                                                                                                          |
+| `defaultContext`                                     | first key of `contexts`                                        | Context assigned to auto-created users when none is requested.                                                                                                                                                                                           |
+| `magicLink`                                          | —                                                              | `allowUser` guard, `autoCreateUsers` toggle, `getLoginPath` override. See `MagicLinkConfig`.                                                                                                                                                             |
+| `email`                                              | —                                                              | Global magic-link email config (`from`, `subject`, `buildEmailHTML`). Overridable per context.                                                                                                                                                           |
+| `oauth.providers.{google,facebook}`                  | env vars                                                       | `{ clientId, clientSecret }`, see [OAuth setup](#oauth-setup).                                                                                                                                                                                           |
+| `webauthn.canManageUser`                             | denies all                                                     | Lets privileged users view/delete another user's passkeys.                                                                                                                                                                                               |
+| `tokens.accessTokenLifetime`                         | `900` (15 min)                                                 | Access token (JWT) lifetime in seconds.                                                                                                                                                                                                                  |
+| `tokens.defaultSessionLifetime`                      | `604800` (7 days)                                              | Refresh-token/session lifetime in seconds when no per-context value applies.                                                                                                                                                                             |
+| `tokens.magicLinkValidity`                           | `900` (15 min)                                                 | Magic-link token validity in seconds.                                                                                                                                                                                                                    |
+| `sessionCleanup`                                     | daily at 2 AM                                                  | Cron schedule for the expired-session cleanup job (`enabled`, `cron`, `queue`).                                                                                                                                                                          |
+| `agentLogin`                                         | —                                                              | `email`, `secret`, `allowedHostnames` for the dev-only auto-login endpoint.                                                                                                                                                                              |
 
 ### Application contexts
 
@@ -131,18 +132,64 @@ endpoints to scope the session.
 
 ### OAuth setup
 
-Enable a provider by supplying credentials, either via plugin options or
-environment variables:
+OAuth is enabled by default (`enableOAuth: true`); a provider becomes active as
+soon as its credentials are configured, either via plugin options:
+
+```ts
+authPlugin({
+  oauth: {
+    providers: {
+      google: {
+        clientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
+      },
+    },
+  },
+})
+```
+
+or via environment variables (fallback when the option is not set):
 
 | Provider | Env vars                                                   | Redirect URI to register with the provider     |
 | -------- | ---------------------------------------------------------- | ---------------------------------------------- |
 | Google   | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`     | `{serverURL}/api/auth/oauth/google/callback`   |
 | Facebook | `FACEBOOK_OAUTH_CLIENT_ID`, `FACEBOOK_OAUTH_CLIENT_SECRET` | `{serverURL}/api/auth/oauth/facebook/callback` |
 
-Only verified-email OAuth profiles are accepted. New users are created
-automatically on first login; existing users are matched first by linked social
-account, then by email (which links the social account to that user going
-forward).
+**Provider console setup (Google):** Google Cloud Console → APIs & Services →
+Credentials → Create OAuth client ID → type "Web application" → add
+`{serverURL}` as authorized JavaScript origin and the redirect URI from the
+table above. `http://localhost:{port}` works for development without domain
+verification. Facebook requires a Meta developer app with the equivalent
+redirect URI ("Valid OAuth Redirect URIs").
+
+**Triggering the flow:** link or redirect the browser to
+
+```
+GET /api/auth/oauth/{provider}?returnUrl=/dashboard&context=my-context
+```
+
+- `returnUrl` (optional) — same-origin path to land on after login. Defaults to
+  the Payload admin route. Unsafe values (absolute/protocol-relative URLs) are
+  replaced with the admin route to prevent open redirects.
+- `context` (optional) — application context assigned to auto-created users
+  (only meaningful when `contexts` are configured).
+
+The shipped admin login buttons (see [Admin panel UI](#admin-panel-ui)) render a
+button per configured provider automatically.
+
+**Flow behavior:**
+
+- Only verified-email OAuth profiles are accepted; unverified emails are
+  rejected with `?error=email_unverified`.
+- New users are created automatically on first login; existing users are matched
+  first by linked social account (provider + provider ID via the
+  `socialAccounts` field), then by email — an email match links the social
+  account to that user for future logins.
+- The OAuth `state` parameter is a signed, short-lived JWT (CSRF protection);
+  tampered or expired states are rejected with `?error=invalid_state`.
+- After login, users with incomplete profiles are redirected to
+  `onboarding.path` (if configured, see [Configuration](#configuration));
+  otherwise `returnUrl` is honored.
 
 ### WebAuthn / passkey gotchas
 

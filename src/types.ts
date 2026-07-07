@@ -332,6 +332,21 @@ export interface PayloadAuthPluginConfig {
   /** OAuth configuration. */
   oauth?: OAuthConfig
   /**
+   * Onboarding redirect configuration. Only relevant when
+   * `enableOnboarding` is on.
+   */
+  onboarding?: {
+    /**
+     * Path of the frontend onboarding UI (static, or resolved per
+     * context/host). When set, users with incomplete profiles are
+     * redirected to `<path>?step=onboarding` after OAuth login.
+     * When omitted, the login honors `returnUrl` (falling back to the
+     * Payload admin route) — safe default for apps without a dedicated
+     * onboarding page.
+     */
+    path?: ((args: { context?: string; host?: null | string }) => string) | string
+  }
+  /**
    * WebAuthn Relying Party ID (typically the domain without port).
    * Falls back to the hostname of `serverURL`.
    */
@@ -385,6 +400,12 @@ export interface ResolvedTokenConfig {
  * Resolved plugin options with all defaults applied.
  */
 export interface ResolvedAuthPluginOptions {
+  /**
+   * The Payload admin route, used as the default post-login redirect.
+   * Resolved from the Payload config's `routes.admin` by the plugin.
+   * @default '/admin'
+   */
+  adminRoute: string
   adminUI: {
     context: string | undefined
     enabled: boolean
@@ -409,6 +430,12 @@ export interface ResolvedAuthPluginOptions {
   magicLink: Pick<MagicLinkConfig, 'allowUser' | 'getLoginPath'> &
     Required<Pick<MagicLinkConfig, 'autoCreateUsers'>>
   oauth: OAuthConfig
+  /**
+   * Path of the frontend onboarding UI; `undefined` means no onboarding
+   * redirect — `returnUrl` is honored instead.
+   */
+  onboardingPath:
+    ((args: { context?: string; host?: null | string }) => string) | string | undefined
   rpID: string
   rpName: string
   serverURL: string
@@ -462,6 +489,8 @@ export function resolveOptions(opts: PayloadAuthPluginConfig = {}): ResolvedAuth
   const defaultContext = opts.defaultContext ?? contextNames[0]
 
   return {
+    // Overridden by the plugin with the Payload config's `routes.admin`.
+    adminRoute: '/admin',
     adminUI: {
       context: opts.adminUI?.context ?? defaultContext,
       enabled: opts.adminUI?.enabled ?? true,
@@ -492,6 +521,7 @@ export function resolveOptions(opts: PayloadAuthPluginConfig = {}): ResolvedAuth
       getLoginPath: opts.magicLink?.getLoginPath,
     },
     oauth: opts.oauth ?? {},
+    onboardingPath: opts.onboarding?.path,
     rpID: opts.rpID ?? url.hostname,
     rpName: opts.rpName ?? 'Payload',
     serverURL,

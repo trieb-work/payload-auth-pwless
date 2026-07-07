@@ -51,6 +51,10 @@ export const authPlugin = (pluginOptions: PayloadAuthPluginConfig = {}): Plugin 
   return (incomingConfig: Config): Config => {
     const config = { ...incomingConfig }
 
+    // Resolve the admin route from the Payload config — used as the default
+    // post-login redirect target across all auth flows.
+    options.adminRoute = incomingConfig.routes?.admin ?? '/admin'
+
     // --- 1. Add new collections ---
     config.collections = [
       ...(config.collections || []),
@@ -84,7 +88,7 @@ export const authPlugin = (pluginOptions: PayloadAuthPluginConfig = {}): Plugin 
     // OAuth/passkey buttons below it (afterLogin). Opt out via
     // `adminUI.enabled: false`.
     if (options.adminUI.enabled) {
-      const redirectPath = options.adminUI.redirectPath ?? incomingConfig.routes?.admin ?? '/admin'
+      const redirectPath = options.adminUI.redirectPath ?? options.adminRoute
 
       const beforeLogin = [...(config.admin?.components?.beforeLogin || [])]
       const afterLogin = [...(config.admin?.components?.afterLogin || [])]

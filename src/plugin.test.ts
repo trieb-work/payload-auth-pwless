@@ -329,6 +329,20 @@ describe('authPlugin admin UI injection', () => {
     expect(after).not.toContain('@trieb.work/payload-auth-pwless/client#AdminLoginButtons')
   })
 
+  it('should derive the login redirect from a custom Payload admin route', async () => {
+    const plugin = authPlugin()
+    const config = createMockConfig()
+    config.routes = { admin: '/backoffice' }
+    const result = await plugin(config)
+    const entry = (result.admin?.components?.beforeLogin || []).find(
+      (e) =>
+        typeof e === 'object' &&
+        (e as { path?: string }).path ===
+          '@trieb.work/payload-auth-pwless/client#AdminMagicLinkLogin',
+    ) as { clientProps?: Record<string, unknown> }
+    expect(entry?.clientProps?.redirectPath).toBe('/backoffice')
+  })
+
   it('should preserve existing beforeLogin/afterLogin entries', async () => {
     const plugin = authPlugin()
     const config = createMockConfig()
