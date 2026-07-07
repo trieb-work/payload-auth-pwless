@@ -59,6 +59,13 @@ export function buildSessionsCollection(args: {
         required: true,
       },
       {
+        name: 'magicLinkTokenId',
+        type: 'text',
+        admin: { readOnly: true },
+        index: true,
+        unique: true,
+      },
+      {
         name: 'deviceFingerprint',
         type: 'text',
         admin: { readOnly: true },

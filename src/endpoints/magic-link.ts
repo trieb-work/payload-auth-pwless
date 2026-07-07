@@ -188,6 +188,22 @@ export function createMagicLinkEndpoints(options: ResolvedAuthPluginOptions): En
           // Verify magic link token
           const claims = await verifyMagicLinkToken(token)
 
+          // One-time-use enforcement: reject if a session was already created
+          // for this token's JTI (i.e. the token has already been used).
+          const usedCheck = await asLoosePayload(payload).find({
+            collection: options.sessionsSlug,
+            depth: 0,
+            limit: 1,
+            where: { magicLinkTokenId: { equals: claims.jti } },
+          })
+          if (usedCheck.docs[0]) {
+            payload.logger.warn(
+              { jti: claims.jti },
+              'Magic link replay attempt rejected - token already used',
+            )
+            return Response.json({ error: 'Invalid or expired magic link' }, { status: 401 })
+          }
+
           // Find user by email
           const result = await asLoosePayload(payload).find({
             collection: options.usersSlug,
@@ -208,6 +224,7 @@ export function createMagicLinkEndpoints(options: ResolvedAuthPluginOptions): En
           // Create session
           const session = await createSession({
             clientIp: getClientIp(req),
+            magicLinkTokenId: claims.jti,
             payload,
             sessionsSlug: options.sessionsSlug,
             tokenConfig: options.tokens,
