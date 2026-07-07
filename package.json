@@ -1,5 +1,5 @@
 {
-  "name": "@trieb.work/payload-auth",
+  "name": "@trieb.work/payload-auth-pwless",
   "version": "0.0.0",
   "description": "Payload CMS plugin for passwordless authentication: WebAuthn/passkeys, magic links, OAuth, and refresh-token session handling",
   "keywords": [
