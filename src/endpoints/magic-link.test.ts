@@ -229,21 +229,19 @@ describe('createMagicLinkEndpoints', () => {
       //
       // First verify call:  sessions → empty (token not yet used), users → user
       // Second verify call: sessions → fakeSession (token already used) → rejected
-      const mockFind = vi
-        .fn()
-        .mockImplementation(({ collection }: { collection: string }) => {
-          if (collection === sessionsSlug) {
-            // After the first successful verify, the session exists in DB.
-            // We track call count on the sessions branch to toggle behaviour.
-            const sessionCallCount = mockFind.mock.calls.filter(
-              ([arg]: [{ collection: string }]) => arg.collection === sessionsSlug,
-            ).length
-            // On the very first sessions-find (call 1) return empty; thereafter return the used session.
-            return Promise.resolve({ docs: sessionCallCount > 1 ? [fakeSession] : [] })
-          }
-          // Users collection — always return the user.
-          return Promise.resolve({ docs: [existingUser] })
-        })
+      const mockFind = vi.fn().mockImplementation(({ collection }: { collection: string }) => {
+        if (collection === sessionsSlug) {
+          // After the first successful verify, the session exists in DB.
+          // We track call count on the sessions branch to toggle behaviour.
+          const sessionCallCount = mockFind.mock.calls.filter(
+            ([arg]: [{ collection: string }]) => arg.collection === sessionsSlug,
+          ).length
+          // On the very first sessions-find (call 1) return empty; thereafter return the used session.
+          return Promise.resolve({ docs: sessionCallCount > 1 ? [fakeSession] : [] })
+        }
+        // Users collection — always return the user.
+        return Promise.resolve({ docs: [existingUser] })
+      })
 
       const makeVerifyReq = (token: string) =>
         makeReq(
