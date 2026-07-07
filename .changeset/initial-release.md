@@ -1,5 +1,5 @@
 ---
-'@trieb.work/payload-auth': minor
+'@trieb.work/payload-auth-pwless': minor
 ---
 
 Initial release: passwordless authentication plugin for Payload CMS 3.
@@ -16,4 +16,4 @@ Initial release: passwordless authentication plugin for Payload CMS 3.
   and email branding
 - Optional onboarding endpoint + fields, last-login tracking, dev-only agent
   auto-login
-- Optional admin login form component (`@trieb.work/payload-auth/client`)
+- Optional admin login form component (`@trieb.work/payload-auth-pwless/client`)

@@ -1,5 +1,5 @@
 ---
-'@trieb.work/payload-auth': minor
+'@trieb.work/payload-auth-pwless': minor
 ---
 
 Enforce one-time-use for magic link tokens via JTI tracking. Each magic link JWT
