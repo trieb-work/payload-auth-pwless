@@ -9,6 +9,12 @@ import { generateDeviceFingerprint, generateSecureToken, signAccessToken } from 
 
 interface CreateSessionInput {
   clientIp?: string
+  /**
+   * JTI from a magic-link token. Stored on the session to enforce one-time
+   * use: a second verify call for the same JTI will find an existing session
+   * and be rejected before this function is reached.
+   */
+  magicLinkTokenId?: string
   payload: Payload
   /**
    * Slug of the sessions collection.
@@ -40,7 +46,15 @@ interface SessionResult {
  * The session is persisted in the sessions collection.
  */
 export async function createSession(input: CreateSessionInput): Promise<SessionResult> {
-  const { payload, sessionsSlug = 'sessions', tokenConfig, user, userAgent, usersSlug } = input
+  const {
+    magicLinkTokenId,
+    payload,
+    sessionsSlug = 'sessions',
+    tokenConfig,
+    user,
+    userAgent,
+    usersSlug,
+  } = input
 
   const appContext = user.applicationContext || undefined
   const sessionLifetime =
@@ -62,6 +76,7 @@ export async function createSession(input: CreateSessionInput): Promise<SessionR
       deviceFingerprint: fingerprint,
       expiresAt: expiresAt.toISOString(),
       lastUsedAt: new Date().toISOString(),
+      magicLinkTokenId: magicLinkTokenId || undefined,
       refreshToken,
       user: user.id,
       userAgent: userAgent || undefined,

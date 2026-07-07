@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto'
+import { createHash, randomBytes, randomUUID } from 'crypto'
 import { type JWTPayload, jwtVerify, SignJWT } from 'jose'
 
 import { DEFAULT_ACCESS_TOKEN_LIFETIME, DEFAULT_MAGIC_LINK_VALIDITY } from '../types'
@@ -77,6 +77,7 @@ export async function signMagicLinkToken(
   })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setIssuedAt()
+    .setJti(randomUUID())
     .setExpirationTime(`${validitySeconds}s`)
     .sign(getSecret())
 }
@@ -86,14 +87,18 @@ export async function signMagicLinkToken(
  */
 export async function verifyMagicLinkToken(
   token: string,
-): Promise<{ applicationContext?: string; email: string }> {
+): Promise<{ applicationContext?: string; email: string; jti: string }> {
   const { payload } = await jwtVerify(token, getSecret())
   if (payload.purpose !== 'magic-link') {
     throw new Error('Invalid token purpose')
   }
+  if (!payload.jti) {
+    throw new Error('Magic link token missing jti')
+  }
   return {
     applicationContext: payload.applicationContext as string | undefined,
     email: payload.email as string,
+    jti: payload.jti,
   }
 }
 

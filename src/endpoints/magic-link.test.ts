@@ -206,5 +206,133 @@ describe('createMagicLinkEndpoints', () => {
       const body = await response.json()
       expect(body.error).toBe('Invalid or expired magic link')
     })
+
+    it('magic-link token is rejected on second use (one-time-use enforcement)', async () => {
+      const { signMagicLinkToken } = await import('../utilities/tokens')
+
+      const existingUser = {
+        id: 'user-replay',
+        email: 'replay@example.com',
+        applicationContext: null,
+      }
+
+      // Simulate the session DB: empty before first use, populated after.
+      const sessionsSlug = mockOptions.sessionsSlug // 'sessions'
+      const fakeSession = { id: 'session-1', magicLinkTokenId: 'some-jti' }
+
+      const mockCreate = vi.fn().mockResolvedValue(fakeSession)
+      const mockUpdate = vi.fn().mockResolvedValue(existingUser)
+
+      // find() is called twice per verify invocation:
+      //   1. sessions collection  — JTI replay check
+      //   2. users collection     — look up the user by email
+      //
+      // First verify call:  sessions → empty (token not yet used), users → user
+      // Second verify call: sessions → fakeSession (token already used) → rejected
+      const mockFind = vi
+        .fn()
+        .mockImplementation(({ collection }: { collection: string }) => {
+          if (collection === sessionsSlug) {
+            // After the first successful verify, the session exists in DB.
+            // We track call count on the sessions branch to toggle behaviour.
+            const sessionCallCount = mockFind.mock.calls.filter(
+              ([arg]: [{ collection: string }]) => arg.collection === sessionsSlug,
+            ).length
+            // On the very first sessions-find (call 1) return empty; thereafter return the used session.
+            return Promise.resolve({ docs: sessionCallCount > 1 ? [fakeSession] : [] })
+          }
+          // Users collection — always return the user.
+          return Promise.resolve({ docs: [existingUser] })
+        })
+
+      const makeVerifyReq = (token: string) =>
+        makeReq(
+          { token },
+          {
+            payload: {
+              create: mockCreate,
+              find: mockFind,
+              update: mockUpdate,
+            },
+          },
+        )
+
+      const endpoints = createMagicLinkEndpoints(mockOptions)
+      const verifyHandler = endpoints[1].handler
+
+      const token = await signMagicLinkToken({ email: 'replay@example.com' })
+
+      const firstResponse = await verifyHandler(makeVerifyReq(token))
+      expect(firstResponse.status).toBe(200)
+
+      // Second call with the same token must be rejected.
+      const secondResponse = await verifyHandler(makeVerifyReq(token))
+      expect(secondResponse.status).toBe(401)
+    })
+
+    it('parallel replay: only one of two concurrent verify requests for the same token succeeds', async () => {
+      const { signMagicLinkToken } = await import('../utilities/tokens')
+
+      const existingUser = {
+        id: 'user-parallel',
+        email: 'parallel@example.com',
+        applicationContext: null,
+      }
+      const sessionsSlug = mockOptions.sessionsSlug
+
+      // Both concurrent requests hit the JTI check at the same instant and
+      // both see an empty sessions collection — this is the race window.
+      // The DB unique constraint on magicLinkTokenId is the last line of
+      // defence: the second create() must throw a unique-violation error.
+      let createCallCount = 0
+      const mockCreate = vi.fn().mockImplementation(() => {
+        createCallCount++
+        if (createCallCount > 1) {
+          // Simulate the DB rejecting the duplicate magicLinkTokenId.
+          return Promise.reject(new Error('duplicate key: magicLinkTokenId'))
+        }
+        return Promise.resolve({ id: `session-${createCallCount}`, magicLinkTokenId: 'jti' })
+      })
+
+      const mockUpdate = vi.fn().mockResolvedValue(existingUser)
+
+      // Both requests observe an empty sessions collection (race window:
+      // neither has committed yet when both execute the JTI check).
+      const mockFind = vi.fn().mockImplementation(({ collection }: { collection: string }) => {
+        if (collection === sessionsSlug) {
+          return Promise.resolve({ docs: [] }) // always empty — simulates the race
+        }
+        return Promise.resolve({ docs: [existingUser] })
+      })
+
+      const makeVerifyReq = (token: string) =>
+        makeReq(
+          { token },
+          {
+            payload: {
+              create: mockCreate,
+              find: mockFind,
+              update: mockUpdate,
+            },
+          },
+        )
+
+      const endpoints = createMagicLinkEndpoints(mockOptions)
+      const verifyHandler = endpoints[1].handler
+
+      const token = await signMagicLinkToken({ email: 'parallel@example.com' })
+
+      // Fire both requests simultaneously — neither sees the other's session yet.
+      const [res1, res2] = await Promise.all([
+        verifyHandler(makeVerifyReq(token)),
+        verifyHandler(makeVerifyReq(token)),
+      ])
+
+      const statuses = [res1.status, res2.status].sort()
+
+      // Exactly one must succeed (200) and one must fail (401 or 500).
+      expect(statuses[0]).toBe(200)
+      expect(statuses[1]).toBeGreaterThanOrEqual(401)
+    })
   })
 })
