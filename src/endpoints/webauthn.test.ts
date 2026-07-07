@@ -88,7 +88,11 @@ describe('createWebAuthnEndpoints', () => {
         docs: [{ credentialID: 'existing-cred-id', transports: ['internal'] }],
       })
       const { handler } = getEndpoint('/auth/webauthn/register-options')
-      const response = await handler(makeReq({ payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } } }))
+      const response = await handler(
+        makeReq({
+          payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
+        }),
+      )
       expect(response.status).toBe(200)
       const body = await response.json()
       const excluded = body.options?.excludeCredentials ?? []
@@ -109,7 +113,9 @@ describe('createWebAuthnEndpoints', () => {
       const { handler } = getEndpoint('/auth/webauthn/register-verify')
       const req = {
         ...makeReq(),
-        json: async () => { throw new Error('bad json') },
+        json: async () => {
+          throw new Error('bad json')
+        },
       } as unknown as PayloadRequest
       const response = await handler(req)
       expect(response.status).toBe(400)
@@ -160,7 +166,9 @@ describe('createWebAuthnEndpoints', () => {
       const mockFind = vi.fn().mockResolvedValue({ docs: [{ credentialID: 'cred-1' }] })
       const { handler } = getEndpoint('/auth/webauthn/has-credentials')
       const response = await handler(
-        makeReq({ payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } } }),
+        makeReq({
+          payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
+        }),
       )
       expect(response.status).toBe(200)
       const body = await response.json()
@@ -171,7 +179,9 @@ describe('createWebAuthnEndpoints', () => {
       const mockFind = vi.fn().mockRejectedValue(new Error('db down'))
       const { handler } = getEndpoint('/auth/webauthn/has-credentials')
       const response = await handler(
-        makeReq({ payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } } }),
+        makeReq({
+          payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
+        }),
       )
       expect(response.status).toBe(500)
     })
@@ -186,7 +196,7 @@ describe('createWebAuthnEndpoints', () => {
       expect(response.status).toBe(401)
     })
 
-    it('returns the current user\'s credentials', async () => {
+    it("returns the current user's credentials", async () => {
       const credential = {
         id: 'cred-doc-1',
         createdAt: '2024-01-01T00:00:00Z',
@@ -198,7 +208,9 @@ describe('createWebAuthnEndpoints', () => {
       const mockFind = vi.fn().mockResolvedValue({ docs: [credential] })
       const { handler } = getEndpoint('/auth/webauthn/credentials')
       const response = await handler(
-        makeReq({ payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } } }),
+        makeReq({
+          payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
+        }),
       )
       expect(response.status).toBe(200)
       const body = await response.json()
@@ -241,7 +253,9 @@ describe('createWebAuthnEndpoints', () => {
       const mockFind = vi.fn().mockRejectedValue(new Error('db down'))
       const { handler } = getEndpoint('/auth/webauthn/credentials')
       const response = await handler(
-        makeReq({ payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } } }),
+        makeReq({
+          payload: { find: mockFind, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
+        }),
       )
       expect(response.status).toBe(500)
     })
@@ -269,7 +283,10 @@ describe('createWebAuthnEndpoints', () => {
       const { handler } = getEndpoint('/auth/webauthn/credentials/:id')
       const response = await handler(
         makeReq({
-          payload: { findByID: mockFindByID, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
+          payload: {
+            findByID: mockFindByID,
+            logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+          },
           routeParams: { id: 'nonexistent-cred' },
         }),
       )
@@ -283,7 +300,10 @@ describe('createWebAuthnEndpoints', () => {
       const { handler } = getEndpoint('/auth/webauthn/credentials/:id')
       const response = await handler(
         makeReq({
-          payload: { findByID: mockFindByID, logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
+          payload: {
+            findByID: mockFindByID,
+            logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+          },
           routeParams: { id: 'cred-doc-1' },
           user: { id: 'user-1', email: 'user@example.com' },
         }),
@@ -398,7 +418,9 @@ describe('createWebAuthnEndpoints', () => {
       const { handler } = getEndpoint('/auth/webauthn/authenticate-verify')
       const req = {
         ...makeReq({ user: null }),
-        json: async () => { throw new Error('bad json') },
+        json: async () => {
+          throw new Error('bad json')
+        },
       } as unknown as PayloadRequest
       const response = await handler(req)
       expect(response.status).toBe(400)

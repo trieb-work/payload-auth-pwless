@@ -7,14 +7,14 @@ autonomy) must behave when working in this repository.
 
 ## Stack at a glance
 
-| Layer | Technology |
-|---|---|
-| Plugin runtime | TypeScript, Payload CMS 3.x, Next.js 15/16 |
-| Unit / integration tests | Vitest (`pnpm test:int`) |
-| E2E tests | Playwright / Chromium (`pnpm test:e2e`) |
-| Releases | Changesets (`pnpm changeset`) |
-| Linting | ESLint + Prettier |
-| Package manager | pnpm 10 |
+| Layer                    | Technology                                 |
+| ------------------------ | ------------------------------------------ |
+| Plugin runtime           | TypeScript, Payload CMS 3.x, Next.js 15/16 |
+| Unit / integration tests | Vitest (`pnpm test:int`)                   |
+| E2E tests                | Playwright / Chromium (`pnpm test:e2e`)    |
+| Releases                 | Changesets (`pnpm changeset`)              |
+| Linting                  | ESLint + Prettier                          |
+| Package manager          | pnpm 10                                    |
 
 ---
 
@@ -25,14 +25,16 @@ autonomy) must behave when working in this repository.
 - **New feature or endpoint** → add a `*.test.ts` unit test in `src/` (vitest).
   If the feature involves cookies, redirects, or browser-visible behaviour, also
   add or extend a Playwright spec in `tests/e2e/`.
-- **Bug fix** → add a regression test that fails before the fix and passes after.
+- **Bug fix** → add a regression test that fails before the fix and passes
+  after.
 - **Change to a currently untested file** → you must add tests for the code you
   touch before the PR can be merged. `webauthn.ts` and `onboarding.ts` are known
   gaps — any edit to them requires adding a corresponding test file.
-- **Refactor with no behaviour change** → existing tests must still pass; no test
-  deletions without a documented reason.
+- **Refactor with no behaviour change** → existing tests must still pass; no
+  test deletions without a documented reason.
 
 Unit test location pattern:
+
 - `src/endpoints/foo.ts` → `src/endpoints/foo.test.ts`
 - `src/utilities/bar.ts` → `src/utilities/bar.test.ts`
 - Top-level plugin changes → `src/plugin.test.ts`
@@ -46,10 +48,10 @@ E2E tests live in `tests/e2e/*.e2e.spec.ts`.
 
 The repository has two separate GitHub Actions workflows:
 
-| Workflow | File | What it checks |
-|---|---|---|
-| CI | `.github/workflows/ci.yml` | format, lint, typecheck, unit+integration tests, build |
-| E2E | `.github/workflows/e2e.yml` | full Playwright suite against a production Next.js build |
+| Workflow | File                        | What it checks                                           |
+| -------- | --------------------------- | -------------------------------------------------------- |
+| CI       | `.github/workflows/ci.yml`  | format, lint, typecheck, unit+integration tests, build   |
+| E2E      | `.github/workflows/e2e.yml` | full Playwright suite against a production Next.js build |
 
 **Both workflows are hard gates.** A PR must not be merged if either workflow is
 red. Do not mark a task as done until you have verified that both pass.
@@ -61,7 +63,9 @@ The changeset description must explain **what changed and why** — a single
 sentence is fine, a commit hash is not.
 
 Bump type rules:
-- `patch` — bug fixes, internal refactors, dependency updates with no API change.
+
+- `patch` — bug fixes, internal refactors, dependency updates with no API
+  change.
 - `minor` — new opt-in features, new config options, new endpoints.
 - `major` — **requires explicit maintainer sign-off**. Do not bump major
   unilaterally. If you believe a change is breaking, open the PR as `minor`,
@@ -75,12 +79,13 @@ need a changeset.
 
 Never use `console.log`, `console.warn`, `console.error`, or `console.info`.
 
-| Context | Logger |
-|---|---|
-| Payload hooks / collection handlers | `req.payload.logger` |
-| Route handlers (endpoint files) | initialise `payload` early, then `payload.logger` |
+| Context                             | Logger                                            |
+| ----------------------------------- | ------------------------------------------------- |
+| Payload hooks / collection handlers | `req.payload.logger`                              |
+| Route handlers (endpoint files)     | initialise `payload` early, then `payload.logger` |
 
 Use Pino object syntax: object first, then message string.
+
 ```ts
 payload.logger.error({ err }, 'Session creation failed')
 payload.logger.info({ userId }, 'Magic link requested')
@@ -102,7 +107,8 @@ errors, `.error()` for unexpected failures.
 
 - Follow the existing patterns in the file you are editing.
 - Run `pnpm format` and `pnpm lint:fix` before committing.
-- TypeScript strict mode is on — no `any` casts without a comment explaining why.
+- TypeScript strict mode is on — no `any` casts without a comment explaining
+  why.
 - Imports must always be at the top of the file.
 - No emojis in source files.
 

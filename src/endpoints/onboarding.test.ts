@@ -26,7 +26,8 @@ function makeReq(
       update: vi.fn().mockResolvedValue({}),
       ...overrides.payload,
     },
-    user: overrides.user !== undefined ? overrides.user : { id: 'user-1', email: 'user@example.com' },
+    user:
+      overrides.user !== undefined ? overrides.user : { id: 'user-1', email: 'user@example.com' },
   } as unknown as PayloadRequest
 }
 
@@ -52,7 +53,9 @@ describe('createOnboardingEndpoints', () => {
     it('should return 400 when the request body is not valid JSON', async () => {
       const [{ handler }] = createOnboardingEndpoints(mockOptions)
       const req = {
-        json: async () => { throw new Error('bad json') },
+        json: async () => {
+          throw new Error('bad json')
+        },
         payload: { logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } },
         user: { id: 'user-1' },
       } as unknown as PayloadRequest
@@ -104,7 +107,9 @@ describe('createOnboardingEndpoints', () => {
       const [{ handler }] = createOnboardingEndpoints(mockOptions)
       const req = makeReq(
         { firstName: 'Jane', lastName: 'Doe' },
-        { payload: { logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }, update: mockUpdate } },
+        {
+          payload: { logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }, update: mockUpdate },
+        },
       )
 
       const response = await handler(req)
@@ -130,7 +135,9 @@ describe('createOnboardingEndpoints', () => {
       const [{ handler }] = createOnboardingEndpoints(mockOptions)
       const req = makeReq(
         { firstName: "O'Brien", lastName: 'Müller-Schmidt' },
-        { payload: { logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }, update: mockUpdate } },
+        {
+          payload: { logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }, update: mockUpdate },
+        },
       )
 
       const response = await handler(req)
@@ -150,7 +157,9 @@ describe('createOnboardingEndpoints', () => {
       const [{ handler }] = createOnboardingEndpoints(mockOptions)
       const req = makeReq(
         { firstName: 'Jane', lastName: 'Doe' },
-        { payload: { logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }, update: mockUpdate } },
+        {
+          payload: { logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }, update: mockUpdate },
+        },
       )
 
       const response = await handler(req)
@@ -171,9 +180,7 @@ describe('createOnboardingEndpoints', () => {
       )
 
       await handler(req)
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'specific-user-id' }),
-      )
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ id: 'specific-user-id' }))
     })
   })
 })
