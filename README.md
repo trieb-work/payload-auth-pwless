@@ -1,4 +1,4 @@
-# @trieb.work/payload-auth
+# @trieb.work/payload-auth-pwless
 
 A self-hosted, passwordless authentication plugin for
 [Payload CMS](https://payloadcms.com) 3.x.
@@ -35,7 +35,7 @@ own authorization layer on top.
 ## Installation
 
 ```sh
-pnpm add @trieb.work/payload-auth
+pnpm add @trieb.work/payload-auth-pwless
 # or: npm install / yarn add
 ```
 
@@ -45,7 +45,7 @@ Peer dependencies: `payload ^3.0.0`, `next ^15.0.0 || ^16.0.0`, `react ^19.0.0`.
 
 ```ts
 // payload.config.ts
-import { authPlugin } from '@trieb.work/payload-auth'
+import { authPlugin } from '@trieb.work/payload-auth-pwless'
 import { buildConfig } from 'payload'
 
 export default buildConfig({
@@ -184,6 +184,38 @@ auth flow. It:
 - creates or reuses a single agent user (`agent@localhost.dev` by default).
 
 Do not enable this in a production deployment.
+
+## Admin panel UI
+
+The plugin ships React components for the Payload admin and injects them
+automatically (opt out with `adminUI: { enabled: false }`):
+
+- **Magic link login form** (`beforeLogin`) — request a login link by email and
+  verify `?token=` links, then redirect into the admin.
+- **Passkey + OAuth login buttons** (`afterLogin`) — "Sign in with Passkey" plus
+  buttons for every configured OAuth provider.
+- **Passkey management field** — injected into the users collection so every
+  user can list, register, and delete their passkeys from their profile.
+  Privileged users (see `webauthn.canManageUser`) can view/delete passkeys of
+  other users.
+
+```ts
+authPlugin({
+  adminUI: {
+    enabled: true, // default
+    context: 'backoffice', // application context for admin logins (default: defaultContext)
+    oauthProviders: ['google'], // default: auto-detected from configured credentials
+    passkeyManagementField: true, // default: enableWebAuthn
+    redirectPath: '/admin', // default: the config's admin route
+  },
+})
+```
+
+All components are also exported from `@trieb.work/payload-auth-pwless/client`
+(`AdminMagicLinkLogin`, `AdminLoginButtons`, `PasskeyManagementField`, and the
+standalone unstyled `LoginForm` for app frontends) if you prefer to wire them
+manually. They are styled with Payload admin CSS variables only. After adding or
+removing components, regenerate the import map (`payload generate:importmap`).
 
 ## Endpoints registered
 
