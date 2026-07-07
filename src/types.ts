@@ -228,9 +228,45 @@ export interface TokenConfig {
 }
 
 /**
+ * Admin panel UI configuration. The plugin ships React components for the
+ * Payload admin (magic link login form, passkey/OAuth login buttons, and a
+ * passkey management field on the users collection) and injects them
+ * automatically. Set `enabled: false` to opt out and wire your own.
+ */
+export interface AdminUIConfig {
+  /**
+   * Application context used by the admin login components (magic link
+   * request + OAuth initiate). Defaults to `defaultContext`.
+   */
+  context?: string
+  /**
+   * Inject the admin login components and passkey management field.
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * OAuth providers to show login buttons for. Defaults to the providers
+   * that are actually configured (options or env vars).
+   */
+  oauthProviders?: string[]
+  /**
+   * Inject the passkey management UI field into the users collection.
+   * Defaults to `enableWebAuthn`.
+   */
+  passkeyManagementField?: boolean
+  /**
+   * Where the admin login components redirect after a successful login.
+   * Defaults to the admin route of the Payload config (usually `/admin`).
+   */
+  redirectPath?: string
+}
+
+/**
  * Configuration options for the payload-auth plugin.
  */
 export interface PayloadAuthPluginConfig {
+  /** Admin panel UI (login components + passkey management field). */
+  adminUI?: AdminUIConfig
   /** Dev-only agent auto-login configuration. */
   agentLogin?: AgentLoginConfig
   /**
@@ -349,6 +385,14 @@ export interface ResolvedTokenConfig {
  * Resolved plugin options with all defaults applied.
  */
 export interface ResolvedAuthPluginOptions {
+  adminUI: {
+    context: string | undefined
+    enabled: boolean
+    oauthProviders: string[]
+    passkeyManagementField: boolean
+    /** `undefined` means: derive from the Payload config's admin route. */
+    redirectPath: string | undefined
+  }
   agentLogin: Pick<AgentLoginConfig, 'secret'> &
     Required<Pick<AgentLoginConfig, 'allowedHostnames' | 'email'>>
   allowedOrigins: string[]
@@ -376,6 +420,27 @@ export interface ResolvedAuthPluginOptions {
 }
 
 /**
+ * Returns the OAuth providers that have credentials configured, either via
+ * plugin options or via the conventional env vars.
+ */
+export function resolveConfiguredOAuthProviders(oauth: OAuthConfig | undefined): string[] {
+  const providers: string[] = []
+  if (
+    oauth?.providers?.google?.clientId ||
+    (process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_CLIENT_SECRET)
+  ) {
+    providers.push('google')
+  }
+  if (
+    oauth?.providers?.facebook?.clientId ||
+    (process.env.FACEBOOK_OAUTH_CLIENT_ID && process.env.FACEBOOK_OAUTH_CLIENT_SECRET)
+  ) {
+    providers.push('facebook')
+  }
+  return providers
+}
+
+/**
  * Resolves plugin options by applying defaults.
  */
 export function resolveOptions(opts: PayloadAuthPluginConfig = {}): ResolvedAuthPluginOptions {
@@ -392,7 +457,20 @@ export function resolveOptions(opts: PayloadAuthPluginConfig = {}): ResolvedAuth
     sessionLifetimes[name] = contexts[name].sessionLifetime ?? defaultSessionLifetime
   }
 
+  const enableOAuth = opts.enableOAuth ?? true
+  const enableWebAuthn = opts.enableWebAuthn ?? true
+  const defaultContext = opts.defaultContext ?? contextNames[0]
+
   return {
+    adminUI: {
+      context: opts.adminUI?.context ?? defaultContext,
+      enabled: opts.adminUI?.enabled ?? true,
+      oauthProviders:
+        opts.adminUI?.oauthProviders ??
+        (enableOAuth ? resolveConfiguredOAuthProviders(opts.oauth) : []),
+      passkeyManagementField: opts.adminUI?.passkeyManagementField ?? enableWebAuthn,
+      redirectPath: opts.adminUI?.redirectPath,
+    },
     agentLogin: {
       allowedHostnames: opts.agentLogin?.allowedHostnames ?? ['localhost', '127.0.0.1', '::1'],
       email: opts.agentLogin?.email ?? 'agent@localhost.dev',
@@ -401,13 +479,13 @@ export function resolveOptions(opts: PayloadAuthPluginConfig = {}): ResolvedAuth
     allowedOrigins: opts.allowedOrigins ?? [serverURL],
     contexts,
     cookieSecure: opts.cookies?.secure ?? url.protocol === 'https:',
-    defaultContext: opts.defaultContext ?? contextNames[0],
+    defaultContext,
     email: opts.email ?? {},
     enableAgentLogin: opts.enableAgentLogin ?? false,
     enableMagicLink: opts.enableMagicLink ?? true,
-    enableOAuth: opts.enableOAuth ?? true,
+    enableOAuth,
     enableOnboarding: opts.enableOnboarding ?? true,
-    enableWebAuthn: opts.enableWebAuthn ?? true,
+    enableWebAuthn,
     magicLink: {
       allowUser: opts.magicLink?.allowUser,
       autoCreateUsers: opts.magicLink?.autoCreateUsers ?? true,

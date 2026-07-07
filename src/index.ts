@@ -1,12 +1,12 @@
 /**
- * @trieb.work/payload-auth — Passwordless authentication for Payload CMS.
+ * @trieb.work/payload-auth-pwless — Passwordless authentication for Payload CMS.
  *
  * WebAuthn/passkeys · magic link email login · OAuth (Google, Facebook) ·
  * refresh-token sessions in HttpOnly cookies.
  *
  * @example
  * ```ts
- * import { authPlugin } from '@trieb.work/payload-auth'
+ * import { authPlugin } from '@trieb.work/payload-auth-pwless'
  *
  * export default buildConfig({
  *   plugins: [

@@ -243,3 +243,107 @@ describe('authPlugin', () => {
     expect(taskSlugs).not.toContain('cleanup-expired-sessions')
   })
 })
+
+describe('authPlugin admin UI injection', () => {
+  function componentPaths(entries: undefined | unknown[]): string[] {
+    return (entries || []).map((e) =>
+      typeof e === 'string' ? e : ((e as { path?: string }).path ?? ''),
+    )
+  }
+
+  it('should inject the passkey management field into users by default', async () => {
+    const result = await applyPlugin()
+    const users = (result.collections || []).find((c) => c.slug === 'users')
+    const fieldNames = (users?.fields || [])
+      .filter((f) => 'name' in f)
+      .map((f) => ('name' in f ? f.name : ''))
+    expect(fieldNames).toContain('passkeyManagement')
+  })
+
+  it('should NOT inject the passkey field when adminUI is disabled', async () => {
+    const result = await applyPlugin({ adminUI: { enabled: false } })
+    const users = (result.collections || []).find((c) => c.slug === 'users')
+    const fieldNames = (users?.fields || [])
+      .filter((f) => 'name' in f)
+      .map((f) => ('name' in f ? f.name : ''))
+    expect(fieldNames).not.toContain('passkeyManagement')
+  })
+
+  it('should NOT inject the passkey field when WebAuthn is disabled', async () => {
+    const result = await applyPlugin({ enableWebAuthn: false })
+    const users = (result.collections || []).find((c) => c.slug === 'users')
+    const fieldNames = (users?.fields || [])
+      .filter((f) => 'name' in f)
+      .map((f) => ('name' in f ? f.name : ''))
+    expect(fieldNames).not.toContain('passkeyManagement')
+  })
+
+  it('should inject the magic link login form into beforeLogin', async () => {
+    const result = await applyPlugin()
+    const paths = componentPaths(result.admin?.components?.beforeLogin)
+    expect(paths).toContain('@trieb.work/payload-auth-pwless/client#AdminMagicLinkLogin')
+  })
+
+  it('should inject the passkey/OAuth buttons into afterLogin', async () => {
+    const result = await applyPlugin()
+    const paths = componentPaths(result.admin?.components?.afterLogin)
+    expect(paths).toContain('@trieb.work/payload-auth-pwless/client#AdminLoginButtons')
+  })
+
+  it('should pass context and redirectPath as clientProps', async () => {
+    const result = await applyPlugin({
+      adminUI: { redirectPath: '/backoffice' },
+      contexts: { intern: {}, portal: {} },
+      defaultContext: 'intern',
+    })
+    const entry = (result.admin?.components?.beforeLogin || []).find(
+      (e) =>
+        typeof e === 'object' &&
+        (e as { path?: string }).path ===
+          '@trieb.work/payload-auth-pwless/client#AdminMagicLinkLogin',
+    ) as { clientProps?: Record<string, unknown> }
+    expect(entry?.clientProps?.context).toBe('intern')
+    expect(entry?.clientProps?.redirectPath).toBe('/backoffice')
+  })
+
+  it('should NOT inject login components when adminUI is disabled', async () => {
+    const result = await applyPlugin({ adminUI: { enabled: false } })
+    const before = componentPaths(result.admin?.components?.beforeLogin)
+    const after = componentPaths(result.admin?.components?.afterLogin)
+    expect(before).not.toContain('@trieb.work/payload-auth-pwless/client#AdminMagicLinkLogin')
+    expect(after).not.toContain('@trieb.work/payload-auth-pwless/client#AdminLoginButtons')
+  })
+
+  it('should not inject the magic link form when magic link is disabled', async () => {
+    const result = await applyPlugin({ enableMagicLink: false })
+    const before = componentPaths(result.admin?.components?.beforeLogin)
+    expect(before).not.toContain('@trieb.work/payload-auth-pwless/client#AdminMagicLinkLogin')
+  })
+
+  it('should not inject afterLogin buttons when WebAuthn is off and no OAuth providers configured', async () => {
+    const result = await applyPlugin({
+      adminUI: { oauthProviders: [] },
+      enableWebAuthn: false,
+    })
+    const after = componentPaths(result.admin?.components?.afterLogin)
+    expect(after).not.toContain('@trieb.work/payload-auth-pwless/client#AdminLoginButtons')
+  })
+
+  it('should preserve existing beforeLogin/afterLogin entries', async () => {
+    const plugin = authPlugin()
+    const config = createMockConfig()
+    config.admin = {
+      components: {
+        afterLogin: ['/app/components/Existing#After'],
+        beforeLogin: ['/app/components/Existing#Before'],
+      },
+    }
+    const result = await plugin(config)
+    const before = componentPaths(result.admin?.components?.beforeLogin)
+    const after = componentPaths(result.admin?.components?.afterLogin)
+    expect(before).toContain('/app/components/Existing#Before')
+    expect(after).toContain('/app/components/Existing#After')
+    expect(before).toContain('@trieb.work/payload-auth-pwless/client#AdminMagicLinkLogin')
+    expect(after).toContain('@trieb.work/payload-auth-pwless/client#AdminLoginButtons')
+  })
+})
