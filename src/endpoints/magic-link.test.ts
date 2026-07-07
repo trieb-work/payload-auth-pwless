@@ -212,8 +212,8 @@ describe('createMagicLinkEndpoints', () => {
 
       const existingUser = {
         id: 'user-replay',
-        email: 'replay@example.com',
         applicationContext: null,
+        email: 'replay@example.com',
       }
 
       // Simulate the session DB: empty before first use, populated after.
@@ -275,8 +275,8 @@ describe('createMagicLinkEndpoints', () => {
 
       const existingUser = {
         id: 'user-parallel',
-        email: 'parallel@example.com',
         applicationContext: null,
+        email: 'parallel@example.com',
       }
       const sessionsSlug = mockOptions.sessionsSlug
 
