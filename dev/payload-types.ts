@@ -254,6 +254,7 @@ export interface Session {
   user: string | User;
   refreshToken: string;
   expiresAt: string;
+  magicLinkTokenId?: string | null;
   deviceFingerprint?: string | null;
   userAgent?: string | null;
   lastUsedAt?: string | null;
@@ -521,6 +522,7 @@ export interface SessionsSelect<T extends boolean = true> {
   user?: T;
   refreshToken?: T;
   expiresAt?: T;
+  magicLinkTokenId?: T;
   deviceFingerprint?: T;
   userAgent?: T;
   lastUsedAt?: T;

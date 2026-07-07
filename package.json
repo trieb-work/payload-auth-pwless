@@ -58,7 +58,7 @@
     "dev": "cross-env NODE_OPTIONS=--no-deprecation PAYLOAD_CONFIG_PATH=./dev/payload.config.ts next dev dev --webpack",
     "dev:generate-importmap": "pnpm dev:payload generate:importmap",
     "dev:generate-types": "pnpm dev:payload generate:types",
-    "dev:payload": "cross-env PAYLOAD_CONFIG_PATH=./dev/payload.config.ts payload run",
+    "dev:payload": "cross-env PAYLOAD_CONFIG_PATH=./dev/payload.config.ts payload",
     "format": "prettier --write . --cache --log-level warn",
     "format:check": "prettier --check . --cache --log-level warn",
     "generate:importmap": "pnpm dev:generate-importmap",
@@ -132,6 +132,7 @@
     "vitest": "4.1.5"
   },
   "peerDependencies": {
+    "@payloadcms/ui": "^3.0.0",
     "next": "^15.0.0 || ^16.0.0",
     "payload": "^3.0.0",
     "react": "^19.0.0"
