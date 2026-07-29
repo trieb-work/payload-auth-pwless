@@ -121,8 +121,11 @@ export function createAgentLoginEndpoint(options: ResolvedAuthPluginOptions): En
         ),
       )
 
-      const requestedReturnUrl = url.searchParams.get('returnUrl') || '/'
-      headers.append('Location', isSafeRedirectPath(requestedReturnUrl) ? requestedReturnUrl : '/')
+      const requestedReturnUrl = url.searchParams.get('returnUrl') || options.adminRoute
+      headers.append(
+        'Location',
+        isSafeRedirectPath(requestedReturnUrl) ? requestedReturnUrl : options.adminRoute,
+      )
 
       payload.logger.info({ userId: user.id }, 'Agent login: session created')
 

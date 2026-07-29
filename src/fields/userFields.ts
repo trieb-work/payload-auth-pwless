@@ -122,5 +122,21 @@ export function buildUserFields(options: ResolvedAuthPluginOptions): Field[] {
     },
   )
 
+  // Passkey management UI in the admin panel (list / add / delete passkeys)
+  if (options.enableWebAuthn && options.adminUI.enabled && options.adminUI.passkeyManagementField) {
+    fields.push({
+      name: 'passkeyManagement',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: {
+            path: '@trieb.work/payload-auth-pwless/client#PasskeyManagementField',
+          },
+        },
+      },
+      label: 'Passkeys',
+    })
+  }
+
   return fields
 }

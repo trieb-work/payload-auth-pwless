@@ -1,2 +1,7 @@
+export { AdminLoginButtons } from '../components/AdminLoginButtons'
+export type { AdminLoginButtonsProps } from '../components/AdminLoginButtons'
+export { AdminMagicLinkLogin } from '../components/AdminMagicLinkLogin'
+export type { AdminMagicLinkLoginProps } from '../components/AdminMagicLinkLogin'
 export { LoginForm } from '../components/LoginForm'
 export type { LoginFormCopy, LoginFormProps } from '../components/LoginForm'
+export { PasskeyManagementField } from '../components/PasskeyManagementField'

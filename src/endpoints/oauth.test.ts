@@ -92,7 +92,7 @@ describe('createOAuthEndpoints', () => {
       expect(callbackResponse.headers.get('Location')).not.toContain('error=invalid_state')
     })
 
-    it('should coerce an unsafe protocol-relative returnUrl (//evil.com) to "/"', async () => {
+    it('should coerce an unsafe protocol-relative returnUrl (//evil.com) to the admin route', async () => {
       const endpoints = createOAuthEndpoints(mockOptions)
       const handler = endpoints[0].handler
 
@@ -104,10 +104,10 @@ describe('createOAuthEndpoints', () => {
       // this assertion — we only need to confirm what value was embedded).
       const payloadSegment = state.split('.')[1]
       const decoded = JSON.parse(Buffer.from(payloadSegment, 'base64url').toString('utf8'))
-      expect(decoded.returnUrl).toBe('/')
+      expect(decoded.returnUrl).toBe('/admin')
     })
 
-    it('should coerce an unsafe absolute returnUrl (http://evil.com) to "/"', async () => {
+    it('should coerce an unsafe absolute returnUrl (http://evil.com) to the admin route', async () => {
       const endpoints = createOAuthEndpoints(mockOptions)
       const handler = endpoints[0].handler
 
@@ -119,7 +119,20 @@ describe('createOAuthEndpoints', () => {
 
       const payloadSegment = state.split('.')[1]
       const decoded = JSON.parse(Buffer.from(payloadSegment, 'base64url').toString('utf8'))
-      expect(decoded.returnUrl).toBe('/')
+      expect(decoded.returnUrl).toBe('/admin')
+    })
+
+    it('should default returnUrl to the admin route when none is provided', async () => {
+      const endpoints = createOAuthEndpoints(mockOptions)
+      const handler = endpoints[0].handler
+
+      const req = makeReq('http://localhost:3006/api/auth/oauth/google')
+      const response = await handler(req)
+      const state = new URL(response.headers.get('Location')!).searchParams.get('state')!
+
+      const payloadSegment = state.split('.')[1]
+      const decoded = JSON.parse(Buffer.from(payloadSegment, 'base64url').toString('utf8'))
+      expect(decoded.returnUrl).toBe('/admin')
     })
 
     it('should return 404 for an unconfigured provider', async () => {

@@ -138,6 +138,21 @@ describe('resolveOptions', () => {
     expect(resolved.sessionsSlug).toBe('auth-sessions')
   })
 
+  it('should default adminRoute to /admin and onboardingPath to undefined', () => {
+    const resolved = resolveOptions({})
+    expect(resolved.adminRoute).toBe('/admin')
+    expect(resolved.onboardingPath).toBeUndefined()
+  })
+
+  it('should pass through a configured onboarding path', () => {
+    const resolved = resolveOptions({ onboarding: { path: '/welcome' } })
+    expect(resolved.onboardingPath).toBe('/welcome')
+
+    const fn = ({ context }: { context?: string }) => `/${context}/welcome`
+    const resolvedFn = resolveOptions({ onboarding: { path: fn } })
+    expect(resolvedFn.onboardingPath).toBe(fn)
+  })
+
   it('should respect a custom default session lifetime', () => {
     const resolved = resolveOptions({
       contexts: { app: {} },
