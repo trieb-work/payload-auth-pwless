@@ -130,6 +130,30 @@ When configured, an `applicationContext` select field is added to the `users`
 collection, and clients pass `?context=<name>` to the magic-link and OAuth
 endpoints to scope the session.
 
+### Magic link emails
+
+Magic link emails are sent via Payload's built-in `payload.sendEmail()`, so you
+need an [email adapter](https://payloadcms.com/docs/email/overview) configured in
+your Payload config. The plugin handles subject, HTML body, and sender address.
+
+```ts
+authPlugin({
+  email: {
+    from: 'My App <noreply@myapp.com>', // falls back to EMAIL_FROM_ADDRESS env
+    subject: 'Your sign-in link',       // or: ({ context }) => `Sign in to ${context}`
+    buildEmailHTML: ({ url, email, context }) => `
+      <h1>Sign in to ${context ?? 'My App'}</h1>
+      <p>Welcome ${email}!</p>
+      <a href="${url}">Click here to sign in</a>
+    `,
+  },
+})
+```
+
+When omitted, a neutral default HTML template and subject (`"Your login link"`)
+are used. Per-context overrides via `contexts.<name>.email` take precedence over
+the global `email` config.
+
 ### OAuth setup
 
 OAuth is enabled by default (`enableOAuth: true`); a provider becomes active as
