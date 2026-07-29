@@ -18,7 +18,8 @@
     "noEmit": true,
     "paths": {
       "@payload-config": ["./dev/payload.config.ts"],
-      "@trieb.work/payload-auth": ["./src/index.ts"]
+      "@trieb.work/payload-auth-pwless": ["./src/index.ts"],
+      "@trieb.work/payload-auth-pwless/client": ["./src/exports/client.ts"]
     },
     "plugins": [
       {

@@ -44,6 +44,21 @@ export function getLoginPath(
 }
 
 /**
+ * Resolves the frontend onboarding path, or `undefined` when no onboarding
+ * UI is configured (in which case post-login redirects honor `returnUrl`).
+ */
+export function getOnboardingPath(
+  options: ResolvedAuthPluginOptions,
+  context: string | undefined,
+  requestHost: null | string | undefined,
+): string | undefined {
+  if (typeof options.onboardingPath === 'function') {
+    return options.onboardingPath({ context, host: requestHost })
+  }
+  return options.onboardingPath
+}
+
+/**
  * Guards against open-redirect attacks in `returnUrl`-style query params.
  * Only allows same-origin, path-relative redirects: must start with a
  * single `/` and must not be protocol-relative (`//host/...`) or contain a
