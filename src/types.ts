@@ -228,9 +228,45 @@ export interface TokenConfig {
 }
 
 /**
+ * Admin panel UI configuration. The plugin ships React components for the
+ * Payload admin (magic link login form, passkey/OAuth login buttons, and a
+ * passkey management field on the users collection) and injects them
+ * automatically. Set `enabled: false` to opt out and wire your own.
+ */
+export interface AdminUIConfig {
+  /**
+   * Application context used by the admin login components (magic link
+   * request + OAuth initiate). Defaults to `defaultContext`.
+   */
+  context?: string
+  /**
+   * Inject the admin login components and passkey management field.
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * OAuth providers to show login buttons for. Defaults to the providers
+   * that are actually configured (options or env vars).
+   */
+  oauthProviders?: string[]
+  /**
+   * Inject the passkey management UI field into the users collection.
+   * Defaults to `enableWebAuthn`.
+   */
+  passkeyManagementField?: boolean
+  /**
+   * Where the admin login components redirect after a successful login.
+   * Defaults to the admin route of the Payload config (usually `/admin`).
+   */
+  redirectPath?: string
+}
+
+/**
  * Configuration options for the payload-auth plugin.
  */
 export interface PayloadAuthPluginConfig {
+  /** Admin panel UI (login components + passkey management field). */
+  adminUI?: AdminUIConfig
   /** Dev-only agent auto-login configuration. */
   agentLogin?: AgentLoginConfig
   /**
@@ -296,6 +332,21 @@ export interface PayloadAuthPluginConfig {
   /** OAuth configuration. */
   oauth?: OAuthConfig
   /**
+   * Onboarding redirect configuration. Only relevant when
+   * `enableOnboarding` is on.
+   */
+  onboarding?: {
+    /**
+     * Path of the frontend onboarding UI (static, or resolved per
+     * context/host). When set, users with incomplete profiles are
+     * redirected to `<path>?step=onboarding` after OAuth login.
+     * When omitted, the login honors `returnUrl` (falling back to the
+     * Payload admin route) — safe default for apps without a dedicated
+     * onboarding page.
+     */
+    path?: ((args: { context?: string; host?: null | string }) => string) | string
+  }
+  /**
    * WebAuthn Relying Party ID (typically the domain without port).
    * Falls back to the hostname of `serverURL`.
    */
@@ -349,6 +400,20 @@ export interface ResolvedTokenConfig {
  * Resolved plugin options with all defaults applied.
  */
 export interface ResolvedAuthPluginOptions {
+  /**
+   * The Payload admin route, used as the default post-login redirect.
+   * Resolved from the Payload config's `routes.admin` by the plugin.
+   * @default '/admin'
+   */
+  adminRoute: string
+  adminUI: {
+    context: string | undefined
+    enabled: boolean
+    oauthProviders: string[]
+    passkeyManagementField: boolean
+    /** `undefined` means: derive from the Payload config's admin route. */
+    redirectPath: string | undefined
+  }
   agentLogin: Pick<AgentLoginConfig, 'secret'> &
     Required<Pick<AgentLoginConfig, 'allowedHostnames' | 'email'>>
   allowedOrigins: string[]
@@ -365,6 +430,12 @@ export interface ResolvedAuthPluginOptions {
   magicLink: Pick<MagicLinkConfig, 'allowUser' | 'getLoginPath'> &
     Required<Pick<MagicLinkConfig, 'autoCreateUsers'>>
   oauth: OAuthConfig
+  /**
+   * Path of the frontend onboarding UI; `undefined` means no onboarding
+   * redirect — `returnUrl` is honored instead.
+   */
+  onboardingPath:
+    ((args: { context?: string; host?: null | string }) => string) | string | undefined
   rpID: string
   rpName: string
   serverURL: string
@@ -373,6 +444,27 @@ export interface ResolvedAuthPluginOptions {
   tokens: ResolvedTokenConfig
   usersSlug: string
   webauthn: WebAuthnConfig
+}
+
+/**
+ * Returns the OAuth providers that have credentials configured, either via
+ * plugin options or via the conventional env vars.
+ */
+export function resolveConfiguredOAuthProviders(oauth: OAuthConfig | undefined): string[] {
+  const providers: string[] = []
+  if (
+    oauth?.providers?.google?.clientId ||
+    (process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_CLIENT_SECRET)
+  ) {
+    providers.push('google')
+  }
+  if (
+    oauth?.providers?.facebook?.clientId ||
+    (process.env.FACEBOOK_OAUTH_CLIENT_ID && process.env.FACEBOOK_OAUTH_CLIENT_SECRET)
+  ) {
+    providers.push('facebook')
+  }
+  return providers
 }
 
 /**
@@ -392,7 +484,22 @@ export function resolveOptions(opts: PayloadAuthPluginConfig = {}): ResolvedAuth
     sessionLifetimes[name] = contexts[name].sessionLifetime ?? defaultSessionLifetime
   }
 
+  const enableOAuth = opts.enableOAuth ?? true
+  const enableWebAuthn = opts.enableWebAuthn ?? true
+  const defaultContext = opts.defaultContext ?? contextNames[0]
+
   return {
+    // Overridden by the plugin with the Payload config's `routes.admin`.
+    adminRoute: '/admin',
+    adminUI: {
+      context: opts.adminUI?.context ?? defaultContext,
+      enabled: opts.adminUI?.enabled ?? true,
+      oauthProviders:
+        opts.adminUI?.oauthProviders ??
+        (enableOAuth ? resolveConfiguredOAuthProviders(opts.oauth) : []),
+      passkeyManagementField: opts.adminUI?.passkeyManagementField ?? enableWebAuthn,
+      redirectPath: opts.adminUI?.redirectPath,
+    },
     agentLogin: {
       allowedHostnames: opts.agentLogin?.allowedHostnames ?? ['localhost', '127.0.0.1', '::1'],
       email: opts.agentLogin?.email ?? 'agent@localhost.dev',
@@ -401,19 +508,20 @@ export function resolveOptions(opts: PayloadAuthPluginConfig = {}): ResolvedAuth
     allowedOrigins: opts.allowedOrigins ?? [serverURL],
     contexts,
     cookieSecure: opts.cookies?.secure ?? url.protocol === 'https:',
-    defaultContext: opts.defaultContext ?? contextNames[0],
+    defaultContext,
     email: opts.email ?? {},
     enableAgentLogin: opts.enableAgentLogin ?? false,
     enableMagicLink: opts.enableMagicLink ?? true,
-    enableOAuth: opts.enableOAuth ?? true,
+    enableOAuth,
     enableOnboarding: opts.enableOnboarding ?? true,
-    enableWebAuthn: opts.enableWebAuthn ?? true,
+    enableWebAuthn,
     magicLink: {
       allowUser: opts.magicLink?.allowUser,
       autoCreateUsers: opts.magicLink?.autoCreateUsers ?? true,
       getLoginPath: opts.magicLink?.getLoginPath,
     },
     oauth: opts.oauth ?? {},
+    onboardingPath: opts.onboarding?.path,
     rpID: opts.rpID ?? url.hostname,
     rpName: opts.rpName ?? 'Payload',
     serverURL,

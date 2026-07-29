@@ -51,6 +51,10 @@ export const authPlugin = (pluginOptions: PayloadAuthPluginConfig = {}): Plugin 
   return (incomingConfig: Config): Config => {
     const config = { ...incomingConfig }
 
+    // Resolve the admin route from the Payload config — used as the default
+    // post-login redirect target across all auth flows.
+    options.adminRoute = incomingConfig.routes?.admin ?? '/admin'
+
     // --- 1. Add new collections ---
     config.collections = [
       ...(config.collections || []),
@@ -79,7 +83,49 @@ export const authPlugin = (pluginOptions: PayloadAuthPluginConfig = {}): Plugin 
 
     config.endpoints = [...(config.endpoints || []), ...endpoints]
 
-    // --- 4. Register scheduled job for session cleanup ---
+    // --- 4. Inject admin panel login components ---
+    // Magic link form above Payload's login form (beforeLogin) and
+    // OAuth/passkey buttons below it (afterLogin). Opt out via
+    // `adminUI.enabled: false`.
+    if (options.adminUI.enabled) {
+      const redirectPath = options.adminUI.redirectPath ?? options.adminRoute
+
+      const beforeLogin = [...(config.admin?.components?.beforeLogin || [])]
+      const afterLogin = [...(config.admin?.components?.afterLogin || [])]
+
+      if (options.enableMagicLink) {
+        beforeLogin.push({
+          clientProps: {
+            context: options.adminUI.context,
+            redirectPath,
+          },
+          path: '@trieb.work/payload-auth-pwless/client#AdminMagicLinkLogin',
+        })
+      }
+
+      if (options.enableWebAuthn || options.adminUI.oauthProviders.length > 0) {
+        afterLogin.push({
+          clientProps: {
+            context: options.adminUI.context,
+            oauthProviders: options.adminUI.oauthProviders,
+            redirectPath,
+            showPasskey: options.enableWebAuthn,
+          },
+          path: '@trieb.work/payload-auth-pwless/client#AdminLoginButtons',
+        })
+      }
+
+      config.admin = {
+        ...(config.admin || {}),
+        components: {
+          ...(config.admin?.components || {}),
+          afterLogin,
+          beforeLogin,
+        },
+      }
+    }
+
+    // --- 5. Register scheduled job for session cleanup ---
     // Uses PayloadCMS 3 Jobs Queue. The task is auto-queued by its `schedule`.
     // To actually execute the queued jobs, the root config must also configure
     // `jobs.autoRun` (or use Vercel Cron / a custom runner on serverless).
