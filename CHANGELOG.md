@@ -1,5 +1,36 @@
 # @trieb.work/payload-auth-pwless
 
+## 0.2.0
+
+### Minor Changes
+
+- 750b662: Ship admin panel UI components and inject them automatically (new
+  `adminUI` option):
+
+  - `AdminMagicLinkLogin` — magic link login form on the admin login view
+    (`beforeLogin`), including `?token=` verification and redirect
+  - `AdminLoginButtons` — "Sign in with Passkey" plus buttons for configured
+    OAuth providers (`afterLogin`)
+  - `PasskeyManagementField` — passkey list/register/delete UI field injected
+    into the users collection
+
+  Injection respects the feature flags (`enableMagicLink`, `enableWebAuthn`,
+  configured OAuth providers) and can be disabled or customised via
+  `adminUI: { enabled, context, oauthProviders, passkeyManagementField, redirectPath }`.
+  `@payloadcms/ui` is now a peer dependency.
+
+- f140429: Make the post-login redirect generic and configurable:
+
+  - New `onboarding.path` option (static path or `({ context, host }) => string`
+    resolver). Users with incomplete profiles are only redirected to
+    `<path>?step=onboarding` after OAuth login when this is configured —
+    previously the redirect always targeted the context login path, which 404s
+    in apps without a frontend onboarding page.
+  - Without `onboarding.path`, `returnUrl` is honored.
+  - The default `returnUrl` (OAuth initiate, agent login, and unsafe-redirect
+    fallbacks) is now the Payload admin route from the consuming config
+    (`routes.admin`, usually `/admin`) instead of `/`.
+
 ## 0.1.0
 
 ### Minor Changes
