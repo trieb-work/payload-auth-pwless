@@ -30,6 +30,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files (never commit credentials)
+.env
+.env.*
 !.env.example
 dev/.env
 dev/.env.*
@@ -58,4 +60,3 @@ src/**/*.d.ts
 # Prettier / ESLint caches
 .prettiercache
 .eslintcache
-config.bat
