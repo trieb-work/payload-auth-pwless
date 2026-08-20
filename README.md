@@ -1,5 +1,10 @@
 # @trieb.work/payload-auth-pwless
 
+[![npm version](https://img.shields.io/npm/v/@trieb.work/payload-auth-pwless.svg)](https://www.npmjs.com/package/@trieb.work/payload-auth-pwless)
+[![CI](https://github.com/trieb-work/payload-auth-pwless/actions/workflows/ci.yml/badge.svg)](https://github.com/trieb-work/payload-auth-pwless/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Payload CMS](https://img.shields.io/badge/Payload-3.x-000000)](https://payloadcms.com)
+
 A self-hosted, passwordless authentication plugin for
 [Payload CMS](https://payloadcms.com) 3.x.
 
